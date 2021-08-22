@@ -1,0 +1,27 @@
+#######################################
+# Syntax Coloring Map For PubSubClient
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+IOTPlatform	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+start 	KEYWORD2
+looop 	KEYWORD2
+reset 	KEYWORD2
+NewNode 	KEYWORD2
+connected 	KEYWORD2
+enableOTA 	KEYWORD2
+disconnect	 	KEYWORD2
+sleep 	KEYWORD2
+publish 	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
