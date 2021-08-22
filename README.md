@@ -1,4 +1,4 @@
-# Arduino Client for MQTT
+# IoT Platform client
 
 This library provides complex client for communication with [IoT Platform](https://prod.iotplatforma.cloud). You can specify all nodes and properties (including callback) and library will automaticly handle announcing and pairing with platform. MQTT communication is based on Homie convention.
 
