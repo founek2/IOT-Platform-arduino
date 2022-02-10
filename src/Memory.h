@@ -53,6 +53,7 @@ public:
     void clearEEPROM();
 
     bool isPaired();
+    bool isInit();
 };
 
 #endif

@@ -67,6 +67,16 @@ public:
     void sleep();
 
     bool publish(const char *topic, const char *message);
+
+    /**
+     * Whether API key was exchanged 
+     */
+    bool isPaired();
+
+    /**
+     * Whether waiting to be add
+     */
+    bool isInit();
 };
 
 #endif

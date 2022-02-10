@@ -8,9 +8,11 @@ const char *dataTypeMap[] = {
     "float",
     "boolean",
     "integer",
-    "enum"};
-
+    "enum",
+    "color"};
+ 
 const char *propertyClassMap[] = {
+    "",
     "temperature",
     "humidity",
     "pressure",
@@ -22,7 +24,8 @@ void PropertyMy::announce()
 
     const String topic = this->getTopic();
     client->publish((topic + "/" + "$name").c_str(), this->getName(), true);
-    client->publish((topic + "/" + "$class").c_str(), propertyClassMap[to_underlying(this->getClass())], true);
+    if (this->getClass() != PropertyClass::NONE)
+        client->publish((topic + "/" + "$class").c_str(), propertyClassMap[to_underlying(this->getClass())], true);
     client->publish((topic + "/" + "$datatype").c_str(), dataTypeMap[to_underlying(this->getDatatype())], true);
 
     if (this->getUnit()[0] != '\0')
@@ -31,6 +34,8 @@ void PropertyMy::announce()
         client->publish((topic + "/" + "$format").c_str(), this->getFormat(), true);
     if (this->isSettable() == true)
         client->publish((topic + "/" + "$settable").c_str(), "true", true);
+    if (this->isRetainable() == true)
+        client->publish((topic + "/" + "$retained").c_str(), "true", true);
 }
 
 void PropertyMy::subscribe()

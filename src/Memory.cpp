@@ -153,3 +153,8 @@ bool Memory::isPaired()
 {
     return this->_pair_status == PAIR_STATUS_PAIRED;
 }
+
+bool Memory::isInit()
+{
+    return this->_pair_status == PAIR_STATUS_INIT;
+}

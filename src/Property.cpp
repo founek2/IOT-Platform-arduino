@@ -1,6 +1,6 @@
 #include "Property.h"
 
-Property::Property(const char *propertyId, const char *name, DataType datatype) : Base(propertyId, name), _datatype(datatype){};
+Property::Property(const char *propertyId, const char *name, DataType datatype) : Base(propertyId, name), _datatype(datatype) {};
 
 void Property::setUnit(const char *unit)
 {
@@ -24,6 +24,11 @@ bool Property::setValue(const char *value)
     this->_value = value;
 
     return true;
+}
+
+void Property::setRetainable(const bool retainable)
+{
+    this->_retainable = retainable;
 }
 
 const String &Property::getValue()
@@ -55,6 +60,11 @@ PropertyClass Property::getClass()
 bool Property::isSettable()
 {
     return this->_settable;
+}
+
+bool Property::isRetainable()
+{
+    return this->_retainable;
 }
 
 std::function<void(Property *)> Property::getCallback()

@@ -10,7 +10,7 @@
 // const char fingerprint[] = "7C:77:E9:A0:BB:42:C5:1D:09:1B:E4:BF:7F:9E:32:A7:54:AD:4C:19"; // localhost
 // const char fingerprint[] = "90:72:F4:F6:D6:4D:EA:76:6C:B7:14:B3:DD:CE:CC:DD:8E:F7:4E:E7"; // v2.iot
 // const char fingerprint[] = "62:5B:96:DF:D5:BE:4B:7C:44:FE:DF:68:AF:8D:8D:8D:6C:A6:DA:E6"; // test.iot
-const char fingerprint[] = "96:11:AA:8E:25:B4:AE:4D:42:CC:AC:BC:EC:BC:E7:B4:AD:BD:89:72"; // home.iot
+const char fingerprint[] = "B0:F6:60:AF:B6:21:6A:B1:19:4D:41:D3:37:DE:50:5D:B2:1F:96:9A"; // home.iot
 
 WiFiManager wifiManager;
 const char *menu[] = {"wifi"};
@@ -26,7 +26,7 @@ bool IOTPlatform::captivePortal(const char *SSID)
     WiFiManagerParameter custom_username("username", "Uživ. jméno", "", realmMaxLen - 1);
     wifiManager.addParameter(&custom_username);
 
-    WiFiManagerParameter custom_mqtt_server("server", "Platforma URL", "home.iotplatforma.cloud", serverMaxLen - 1);
+    WiFiManagerParameter custom_mqtt_server("server", "Platforma URL", "iotdomu.cz", serverMaxLen - 1);
     wifiManager.addParameter(&custom_mqtt_server);
 
     bool shouldSaveParams = false;
@@ -142,7 +142,7 @@ bool IOTPlatform::_connectDiscovery()
     Serial.println("Connecting discovery v2");
 
     this->_device.setPrefix("prefix");
-    bool connected = this->_connectWith((std::string("guest=") + this->_device.getId()).c_str(), "guest");
+    bool connected = this->_connectWith((String("guest=") + this->_device.getId()).c_str(), "guest");
     if (connected)
     {
         this->client.subscribe((this->_device.getTopic() + "/$config/apiKey/set").c_str());
@@ -285,4 +285,14 @@ bool IOTPlatform::_userExists(const char *userName, const char *server)
 
     this->wifiClient.setFingerprint(fingerprint);
     return result == 200;
+}
+
+bool IOTPlatform::isInit()
+{
+    return this->mem.isInit();
+}
+
+bool IOTPlatform::isPaired()
+{
+    return this->mem.isPaired();
 }
