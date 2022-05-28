@@ -46,7 +46,7 @@ public:
     void start();
 
     /**
-     * Loop for handling mqtt connection 
+     * Loop for handling mqtt connection
      */
     void loop();
 
@@ -69,7 +69,7 @@ public:
     bool publish(const char *topic, const char *message);
 
     /**
-     * Whether API key was exchanged 
+     * Whether API key was exchanged
      */
     bool isPaired();
 

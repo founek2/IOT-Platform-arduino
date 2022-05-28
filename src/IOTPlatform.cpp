@@ -5,7 +5,6 @@
 #include <IOTPlatform.h>
 #include <WiFiClientSecureBearSSL.h>
 #include <WiFiManager.h>
-#include <ESP8266HTTPClient.h>
 
 // const char fingerprint[] = "7C:77:E9:A0:BB:42:C5:1D:09:1B:E4:BF:7F:9E:32:A7:54:AD:4C:19"; // localhost
 // const char fingerprint[] = "90:72:F4:F6:D6:4D:EA:76:6C:B7:14:B3:DD:CE:CC:DD:8E:F7:4E:E7"; // v2.iot
@@ -33,8 +32,7 @@ bool IOTPlatform::captivePortal(const char *SSID)
     wifiManager.setSaveParamsCallback([&shouldSaveParams]()
                                       {
                                           Serial.println("setSaveParamsCallonback");
-                                          shouldSaveParams = true;
-                                      });
+                                          shouldSaveParams = true; });
 
     bool statusOk = false;
     while (statusOk == false)
@@ -48,15 +46,12 @@ bool IOTPlatform::captivePortal(const char *SSID)
 
         if (shouldSaveParams)
         {
-            this->wifiClient.setInsecure();
-
             if (this->_userExists(custom_username.getValue(), custom_mqtt_server.getValue()))
             {
                 this->mem.setServerAndRealm(custom_mqtt_server.getValue(), custom_username.getValue());
                 this->_device.setRealm(this->mem.getRealm());
+                this->client.disconnect();
             }
-
-            this->wifiClient.setFingerprint(fingerprint);
         }
         else
         {
@@ -142,7 +137,7 @@ bool IOTPlatform::_connectDiscovery()
     Serial.println("Connecting discovery v2");
 
     this->_device.setPrefix("prefix");
-    bool connected = this->_connectWith((String("guest=") + this->_device.getId()).c_str(), "guest");
+    bool connected = this->_connectWith((String("guest=") + this->_device.getId()).c_str(), this->_device.getRealm());
     if (connected)
     {
         this->client.subscribe((this->_device.getTopic() + "/$config/apiKey/set").c_str());
@@ -214,6 +209,9 @@ void IOTPlatform::_handleSubscribe(const char *top, byte *payload, unsigned int 
         memcpy(data, payload, len);
         data[len] = '\0';
 
+        Serial.print("API_KEY");
+        Serial.println(data);
+
         this->mem.setApiKey(data);
         this->_device.publishStatus(Status::paired);
         this->disconnect();
@@ -275,16 +273,15 @@ bool IOTPlatform::publish(const char *topic, const char *message)
 
 bool IOTPlatform::_userExists(const char *userName, const char *server)
 {
-    HTTPClient http;
-    this->wifiClient.setInsecure();
-    String url = String("https://") + server + "/api/user/" + userName + "?attribute=authType";
-    http.begin(this->wifiClient, url.c_str());
-    int result = http.GET();
-    Serial.printf("user exists %d\n", result);
-    Serial.printf("url %s\n", url.c_str());
+    client.setServer(server, 8883);
 
-    this->wifiClient.setFingerprint(fingerprint);
-    return result == 200;
+    if (this->_connectWith((String("guest=") + this->_device.getId()).c_str(), userName))
+    {
+        this->client.disconnect();
+        return true;
+    }
+
+    return false;
 }
 
 bool IOTPlatform::isInit()

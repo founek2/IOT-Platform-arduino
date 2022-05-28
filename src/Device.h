@@ -44,6 +44,7 @@ public:
     void subscribe();
 
     void setRealm(const char *realm);
+    const char *getRealm();
     void setPrefix(const char *prefix);
 
     void handleSubscribe(const String &topic, byte *payload, unsigned int len);

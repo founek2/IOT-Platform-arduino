@@ -1,15 +1,12 @@
 #include <Ota.h>
-// #ifdef ENABLE_OTA
 #include <ArduinoOTA.h>
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
-// #endif
 
 void Ota::enableOTA(const char *password, const uint16_t port, const char *hostname)
 {
     // Port defaults to 8266
 
-#ifndef EXCLUDE_OTA
     ArduinoOTA.setPort(port);
 
     // Hostname defaults to esp8266-[ChipID]
@@ -19,16 +16,14 @@ void Ota::enableOTA(const char *password, const uint16_t port, const char *hostn
     // No authentication by default
     ArduinoOTA.setPassword(password);
 
-    ArduinoOTA.onStart([]() {
-        Serial.println("Start");
-    });
-    ArduinoOTA.onEnd([]() {
-        Serial.println("\nEnd");
-    });
-    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-        Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-    });
-    ArduinoOTA.onError([](ota_error_t error) {
+    ArduinoOTA.onStart([]()
+                       { Serial.println("Start"); });
+    ArduinoOTA.onEnd([]()
+                     { Serial.println("\nEnd"); });
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total)
+                          { Serial.printf("Progress: %u%%\r", (progress / (total / 100))); });
+    ArduinoOTA.onError([](ota_error_t error)
+                       {
         Serial.printf("Error[%u]: ", error);
         if (error == OTA_AUTH_ERROR)
             Serial.println("Auth Failed");
@@ -39,17 +34,13 @@ void Ota::enableOTA(const char *password, const uint16_t port, const char *hostn
         else if (error == OTA_RECEIVE_ERROR)
             Serial.println("Receive Failed");
         else if (error == OTA_END_ERROR)
-            Serial.println("End Failed");
-    });
+            Serial.println("End Failed"); });
     ArduinoOTA.begin();
 
     this->enabled = true;
-#endif
 }
 
 void Ota::handleOTA()
 {
-#ifndef EXCLUDE_OTA
     ArduinoOTA.handle();
-#endif
 }

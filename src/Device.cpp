@@ -55,6 +55,11 @@ void Device::setRealm(const char *realm)
 {
     this->realm = realm;
 }
+
+const char *Device::getRealm()
+{
+    return this->realm.c_str();
+}
 void Device::setPrefix(const char *prefix)
 {
     this->prefix = prefix;
