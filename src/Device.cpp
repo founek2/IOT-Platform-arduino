@@ -10,9 +10,18 @@ const char *Status::sleeping = "sleeping";
 const char *Status::restarting = "restarting";
 const char *Status::disconnected = "disconnected";
 
-Device::Device(const char *name, PubSubClient *cl) : Base("ESP-1111", name), client(cl)
+Device::Device(const char *name, MqttClient *cl) : Base("ESP-1111", name), client(cl)
 {
-    snprintf(this->id + 4, 9, "%X", ESP.getChipId());
+    uint64_t chipID = 0;
+#ifdef ESP8266
+    chipID = ESP.getChipId();
+#endif
+
+#ifdef ESP32
+    chipID = ESP.getEfuseMac();
+#endif
+
+    snprintf(this->id + 4, 9, "%llX", chipID);
     Serial.printf("DeviceID %s\n", this->id);
     this->_updateTopic();
 };
@@ -26,10 +35,10 @@ Node *Device::NewNode(const char *nodeId, const char *name, NodeType type)
 
 void Device::announce()
 {
-    this->client->publish((this->getTopic() + "/" + "$homie").c_str(), "4.0.0", true);
-    this->client->publish((this->getTopic() + "/" + "$name").c_str(), this->getName(), true);
-    this->client->publish((this->getTopic() + "/" + "$realm").c_str(), this->realm.c_str(), true);
-    this->client->publish((this->getTopic() + "/" + "$implementation").c_str(), "esp8266", true);
+    this->client->publish((this->getTopic() + "/" + "$homie").c_str(), "4.0.0", true, 1);
+    this->client->publish((this->getTopic() + "/" + "$name").c_str(), this->getName(), true, 1);
+    this->client->publish((this->getTopic() + "/" + "$realm").c_str(), this->realm.c_str(), true, 1);
+    this->client->publish((this->getTopic() + "/" + "$implementation").c_str(), "esp8266", true, 1);
 
     String nodesList = "";
     for (int i = 0; i < this->_nodes.size(); i++)
@@ -42,7 +51,7 @@ void Device::announce()
     Serial.print("nodeList");
     Serial.println(nodesList);
     if (this->_nodes.size() > 0)
-        this->client->publish((this->getTopic() + "/" + "$nodes").c_str(), nodesList.c_str(), true);
+        this->client->publish((this->getTopic() + "/" + "$nodes").c_str(), nodesList.c_str(), true, 1);
 
     for (int i = 0; i < this->_nodes.size(); i++)
     {
@@ -80,7 +89,7 @@ void Device::_updateTopic()
 void Device::publishStatus(const char *status)
 {
     Serial.printf("publish status=%s\n", status);
-    client->publish((this->getTopic() + "/" + "$state").c_str(), status, true);
+    client->publish((this->getTopic() + "/" + "$state").c_str(), status, true, 1);
 }
 
 void Device::subscribe()

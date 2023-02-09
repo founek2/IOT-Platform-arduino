@@ -1,7 +1,8 @@
 #include <Node.h>
 #include <NodeMy.h>
 #include <LinkedList.h>
-#include <PubSubClient.h>
+#include <MqttClient.h>
+
 #include <Base.h>
 
 #ifndef Device_H
@@ -21,7 +22,7 @@ public:
 
 class Device : public Base
 {
-    char id[4 + +8 + 1] = {'E', 'S', 'P', '-', '\0'};
+    char id[4 + 13] = {'E', 'S', 'P', '-', '\0'};
     String deviceId;
     String realm;
 
@@ -29,12 +30,12 @@ class Device : public Base
     String api_key;
 
     LinkedList<NodeMy *> _nodes;
-    PubSubClient *client;
+    MqttClient *client;
 
     void _updateTopic();
 
 public:
-    Device(const char *name, PubSubClient *client);
+    Device(const char *name, MqttClient *client);
     Node *NewNode(const char *nodeId, const char *name, NodeType type);
 
     void publishStatus(const char *status);

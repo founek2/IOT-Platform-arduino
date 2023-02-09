@@ -1,9 +1,10 @@
-#include <PubSubClient.h>
 #include <WiFiClientSecure.h>
 #include <Ota.h>
 #include <WiFiManager.h>
 #include <Memory.h>
 #include <Device.h>
+#include <MqttClient.h>
+#include <WiFiManager.h>
 
 #ifndef IOTPlatform_H
 #define IOTPlatform_H
@@ -11,7 +12,8 @@
 class IOTPlatform
 {
     WiFiClientSecure wifiClient;
-    PubSubClient client;
+    WiFiManager wifiManager;
+    MqttClient client;
     Ota ota;
     Memory mem;
     Device _device;
@@ -26,7 +28,7 @@ class IOTPlatform
      */
     bool _connectDiscovery();
     bool _connectPaired();
-    bool _connectWith(const char *userName, const char *password, int counter = 2);
+    bool _connectWith(const char *userName, const char *password, const char *server, int counter = 2);
     bool _connect();
     bool _userExists(const char *userName, const char *server);
 

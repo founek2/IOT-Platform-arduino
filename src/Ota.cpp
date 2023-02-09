@@ -1,6 +1,10 @@
 #include <Ota.h>
 #include <ArduinoOTA.h>
+#ifdef ESP32
+#include <ESPmDNS.h>
+#else
 #include <ESP8266mDNS.h>
+#endif
 #include <WiFiUdp.h>
 
 void Ota::enableOTA(const char *password, const uint16_t port, const char *hostname)

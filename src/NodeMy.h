@@ -1,7 +1,7 @@
 #include <Property.h>
 #include <PropertyMy.h>
 #include <LinkedList.h>
-#include <PubSubClient.h>
+#include <MqttClient.h>
 #include <Node.h>
 
 #ifndef NodeMy_H
@@ -9,11 +9,11 @@
 
 class NodeMy : public Node
 {
-    PubSubClient *client;
+    MqttClient *client;
     LinkedList<PropertyMy *> _properties;
 
 public:
-    NodeMy(const char *nodeId, const char *name, NodeType type, PubSubClient *);
+    NodeMy(const char *nodeId, const char *name, NodeType type, MqttClient *);
 
     Property *NewProperty(const char *propertyId, const char *name, DataType datatype);
 

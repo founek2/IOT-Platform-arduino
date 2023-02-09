@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <PubSubClient.h>
 
 #ifndef Base_H
 #define Base_H

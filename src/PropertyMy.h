@@ -1,4 +1,4 @@
-#include <PubSubClient.h>
+#include <MqttClient.h>
 #include <Base.h>
 #include <Property.h>
 
@@ -7,10 +7,10 @@
 
 class PropertyMy : public Property
 {
-    PubSubClient *client;
+    MqttClient *client;
 
 public:
-    PropertyMy(const char *propertyId, const char *name, DataType datatype, PubSubClient *cl);
+    PropertyMy(const char *propertyId, const char *name, DataType datatype, MqttClient *cl);
 
     bool setValue(const char *value);
     void announce();

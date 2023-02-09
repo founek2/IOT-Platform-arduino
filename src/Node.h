@@ -1,7 +1,6 @@
 #include <Property.h>
 #include <PropertyMy.h>
 #include <LinkedList.h>
-#include <PubSubClient.h>
 #include <Base.h>
 
 #ifndef Node_H

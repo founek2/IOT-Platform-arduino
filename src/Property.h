@@ -1,4 +1,3 @@
-#include <PubSubClient.h>
 #include <Base.h>
 
 #ifndef Property_H

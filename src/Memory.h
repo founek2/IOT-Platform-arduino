@@ -35,7 +35,6 @@ class Memory
     void _loadServerAndRealm();
 
 public:
-    Memory();
     void setPairStatus(PairStatus status);
     void setApiKey(const char *apiKey);
     void setServerAndRealm(const char *server, const char *realm);
@@ -46,6 +45,8 @@ public:
     const char *getRealm();
 
     void loadEEPROM();
+
+    void init();
 
     /**
      * Delete saved topic from EEPROM

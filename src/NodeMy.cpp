@@ -1,7 +1,7 @@
 #include "NodeMy.h"
 #include "util.h"
 
-NodeMy::NodeMy(const char *nodeId, const char *name, NodeType type, PubSubClient *cl) : Node(nodeId, name, type), client(cl){};
+NodeMy::NodeMy(const char *nodeId, const char *name, NodeType type, MqttClient *cl) : Node(nodeId, name, type), client(cl){};
 
 Property *NodeMy::NewProperty(const char *propertyId, const char *name, DataType datatype)
 {
@@ -14,8 +14,8 @@ const char *nodeTypeMap[] = {"activator", "switch", "sensor", "generic"};
 void NodeMy::announce()
 {
     Serial.printf("announce node %s, topic %s\n", this->getId(), this->getTopic().c_str());
-    client->publish((this->getTopic() + "/" + "$name").c_str(), this->getName(), true);
-    client->publish((this->getTopic() + "/" + "$type").c_str(), nodeTypeMap[to_underlying(this->getType())], true);
+    client->publish((this->getTopic() + "/" + "$name").c_str(), this->getName(), true, 1);
+    client->publish((this->getTopic() + "/" + "$type").c_str(), nodeTypeMap[to_underlying(this->getType())], true, 1);
 
     String propertiesList = "";
     for (int i = 0; i < this->_properties.size(); i++)
@@ -28,7 +28,7 @@ void NodeMy::announce()
     Serial.printf("propertiesList %s\n", propertiesList.c_str());
 
     if (this->_properties.size() > 0)
-        client->publish((this->getTopic() + "/" + "$properties").c_str(), propertiesList.c_str(), true);
+        client->publish((this->getTopic() + "/" + "$properties").c_str(), propertiesList.c_str(), true, 1);
 
     for (int i = 0; i < this->_properties.size(); i++)
     {

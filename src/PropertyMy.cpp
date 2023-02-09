@@ -1,7 +1,7 @@
 #include "PropertyMy.h"
 #include "util.h"
 
-PropertyMy::PropertyMy(const char *propertyId, const char *name, DataType datatype, PubSubClient *cl) : Property(propertyId, name, datatype), client(cl){};
+PropertyMy::PropertyMy(const char *propertyId, const char *name, DataType datatype, MqttClient *cl) : Property(propertyId, name, datatype), client(cl){};
 
 const char *dataTypeMap[] = {
     "string",
@@ -10,7 +10,7 @@ const char *dataTypeMap[] = {
     "integer",
     "enum",
     "color"};
- 
+
 const char *propertyClassMap[] = {
     "",
     "temperature",
@@ -23,19 +23,19 @@ void PropertyMy::announce()
     Serial.printf("announce property %s, topic %s\n", this->getId(), this->getTopic().c_str());
 
     const String topic = this->getTopic();
-    client->publish((topic + "/" + "$name").c_str(), this->getName(), true);
+    client->publish((topic + "/" + "$name").c_str(), this->getName(), true, 1);
     if (this->getClass() != PropertyClass::NONE)
-        client->publish((topic + "/" + "$class").c_str(), propertyClassMap[to_underlying(this->getClass())], true);
-    client->publish((topic + "/" + "$datatype").c_str(), dataTypeMap[to_underlying(this->getDatatype())], true);
+        client->publish((topic + "/" + "$class").c_str(), propertyClassMap[to_underlying(this->getClass())], true, 1);
+    client->publish((topic + "/" + "$datatype").c_str(), dataTypeMap[to_underlying(this->getDatatype())], true, 1);
 
     if (this->getUnit()[0] != '\0')
-        client->publish((topic + "/" + "$unit").c_str(), this->getUnit(), true);
+        client->publish((topic + "/" + "$unit").c_str(), this->getUnit(), true, 1);
     if (this->getFormat()[0] != '\0')
-        client->publish((topic + "/" + "$format").c_str(), this->getFormat(), true);
+        client->publish((topic + "/" + "$format").c_str(), this->getFormat(), true, 1);
     if (this->isSettable() == true)
-        client->publish((topic + "/" + "$settable").c_str(), "true", true);
+        client->publish((topic + "/" + "$settable").c_str(), "true", true, 1);
     if (this->isRetainable() == true)
-        client->publish((topic + "/" + "$retained").c_str(), "true", true);
+        client->publish((topic + "/" + "$retained").c_str(), "true", true, 1);
 }
 
 void PropertyMy::subscribe()

@@ -1,17 +1,15 @@
-#include <PubSubClient.h>
 #include <WiFiClientSecure.h>
-#include <ESP8266WiFi.h>
 #include <EEPROM.h>
 #include <IOTPlatform.h>
-#include <WiFiClientSecureBearSSL.h>
-#include <WiFiManager.h>
 
 // const char fingerprint[] = "7C:77:E9:A0:BB:42:C5:1D:09:1B:E4:BF:7F:9E:32:A7:54:AD:4C:19"; // localhost
 // const char fingerprint[] = "90:72:F4:F6:D6:4D:EA:76:6C:B7:14:B3:DD:CE:CC:DD:8E:F7:4E:E7"; // v2.iot
 // const char fingerprint[] = "62:5B:96:DF:D5:BE:4B:7C:44:FE:DF:68:AF:8D:8D:8D:6C:A6:DA:E6"; // test.iot
 const char fingerprint[] = "B0:F6:60:AF:B6:21:6A:B1:19:4D:41:D3:37:DE:50:5D:B2:1F:96:9A"; // home.iot
 
-WiFiManager wifiManager;
+WiFiManagerParameter custom_username("username", "Uživ. jméno", "", realmMaxLen - 1);
+WiFiManagerParameter custom_mqtt_server("server", "Platforma URL", "iotdomu.cz", serverMaxLen - 1);
+
 const char *menu[] = {"wifi"};
 bool IOTPlatform::captivePortal(const char *SSID)
 {
@@ -19,25 +17,28 @@ bool IOTPlatform::captivePortal(const char *SSID)
     // wifiManager.erase();
     WiFi.mode(WIFI_STA);
 
-    wifiManager.setMenu(menu, 1);
-    wifiManager.setConfigPortalTimeout(300);
-    wifiManager.setShowInfoUpdate(false);
-    WiFiManagerParameter custom_username("username", "Uživ. jméno", "", realmMaxLen - 1);
-    wifiManager.addParameter(&custom_username);
+    Serial.println("entering captivePortal");
 
-    WiFiManagerParameter custom_mqtt_server("server", "Platforma URL", "iotdomu.cz", serverMaxLen - 1);
-    wifiManager.addParameter(&custom_mqtt_server);
+    this.wifiManager.setMenu(menu, 1);
+    this.wifiManager.setConfigPortalTimeout(300);
+    this.wifiManager.setShowInfoUpdate(false);
+
+    this.wifiManager.addParameter(&custom_username);
+    this.wifiManager.addParameter(&custom_mqtt_server);
+
+    // this.wifiManager.setConfigPortalBlocking(false);
 
     bool shouldSaveParams = false;
-    wifiManager.setSaveParamsCallback([&shouldSaveParams]()
-                                      {
+    this.wifiManager.setSaveParamsCallback([&shouldSaveParams]()
+                                           {
                                           Serial.println("setSaveParamsCallonback");
                                           shouldSaveParams = true; });
 
     bool statusOk = false;
     while (statusOk == false)
     {
-        bool isConnected = wifiManager.autoConnect(SSID);
+        Serial.println("Connecting");
+        bool isConnected = this.wifiManager.autoConnect(SSID);
         if (!isConnected)
             continue;
 
@@ -64,27 +65,31 @@ bool IOTPlatform::captivePortal(const char *SSID)
             statusOk = true;
         }
         else
-            wifiManager.erase();
+            this.wifiManager.erase();
     }
 
     // this->mem.setServerAndRealm("dev.iotplatforma.cloud", "martas");
     // this->_device.setRealm(this->mem.getRealm());
-    return wifiManager.getWiFiIsSaved();
+    return this.wifiManager.getWiFiIsSaved();
 }
 
-IOTPlatform::IOTPlatform(const char *deviceName) : wifiClient(), client(wifiClient), _device(deviceName, &this->client)
+IOTPlatform::IOTPlatform(const char *deviceName) : mem(), wifiClient(), client(350, this->wifiClient), _device(deviceName, &this->client)
 {
 
-    wifiClient.setFingerprint(fingerprint);
-    // wifiClient.setInsecure();
+    // wifiClient.setFingerprint(fingerprint);
+    client.setKeepAlive(15);
 }
 
 void IOTPlatform::start()
 {
-    this->captivePortal();
+    this->mem.init();
+
+    wifiClient.setInsecure();
     client.setServer(this->mem.getServer(), 8883);
-    bool result = client.setBufferSize(350);
-    Serial.printf("Starting buffer=%d", result);
+
+    this->captivePortal();
+    // bool result = client.setBufferSize(350);
+    // Serial.printf("Starting buffer=%d", result);
 
     this->loop();
 }
@@ -105,9 +110,10 @@ bool IOTPlatform::_connect()
     return false;
 }
 
-bool IOTPlatform::_connectWith(const char *userName, const char *password, int counter)
+bool IOTPlatform::_connectWith(const char *userName, const char *password, const char *server, int counter)
 {
-    Serial.printf("_connectWith ID=%s, userName=%s, password=%s, server=%s\n", this->_device.getId(), userName, password, this->mem.getServer());
+    Serial.printf("_connectWith ID=%s, userName=%s, password=%s, server=%s\n", this->_device.getId(), userName, password, server);
+    client.setServer(server, 8883);
 
     randomSeed(micros());
     while (!client.connected() && counter > 0)
@@ -119,8 +125,8 @@ bool IOTPlatform::_connectWith(const char *userName, const char *password, int c
         if (client.connect(clientId.c_str(), userName, password, (this->_device.getTopic() + "/" + "$state").c_str(), 1, false, Status::lost))
         {
             Serial.println("connected");
-            client.setCallback([this](const char *topic, byte *payload, unsigned int length)
-                               { this->_handleSubscribe(topic, payload, length); });
+            client.onMessage([this](const char *topic, byte *payload, unsigned int length)
+                             { this->_handleSubscribe(topic, payload, length); });
             return true;
         }
         else
@@ -137,7 +143,7 @@ bool IOTPlatform::_connectDiscovery()
     Serial.println("Connecting discovery v2");
 
     this->_device.setPrefix("prefix");
-    bool connected = this->_connectWith((String("guest=") + this->_device.getId()).c_str(), this->_device.getRealm());
+    bool connected = this->_connectWith((String("guest=") + this->_device.getId()).c_str(), this->_device.getRealm(), this->mem.getServer());
     if (connected)
     {
         this->client.subscribe((this->_device.getTopic() + "/$config/apiKey/set").c_str());
@@ -154,7 +160,7 @@ bool IOTPlatform::_connectPaired()
     Serial.println("Connecting paired");
 
     this->_device.setPrefix((String("v2/") + this->mem.getRealm()).c_str());
-    bool connected = this->_connectWith((String("device=") + this->mem.getRealm() + "/" + this->_device.getId()).c_str(), this->mem.getApiKey());
+    bool connected = this->_connectWith((String("device=") + this->mem.getRealm() + "/" + this->_device.getId()).c_str(), this->mem.getApiKey(), this->mem.getServer());
     if (connected)
     {
         this->client.subscribe((this->_device.getTopic() + "/$cmd/set").c_str());
@@ -177,7 +183,8 @@ void IOTPlatform::loop()
     if (!client.connected() && (myTime == 0 || millis() - myTime >= 40 * 1000 || myTime > millis()))
     {
         myTime = millis();
-        Serial.println("Client disconnected, reconnecting.");
+        Serial.print("Client disconnected, reconnecting. rc=");
+        Serial.println(this->client.state());
         this->_connect();
     }
 
@@ -251,6 +258,7 @@ Node *IOTPlatform::NewNode(const char *nodeId, const char *name, NodeType type)
 void IOTPlatform::disconnect()
 {
     this->_device.publishStatus(Status::disconnected);
+    this->client.loop();
     this->client.disconnect();
 }
 
@@ -262,7 +270,7 @@ void IOTPlatform::sleep()
 
 void IOTPlatform::reset()
 {
-    wifiManager.erase();
+    this.wifiManager.erase();
     this->mem.clearEEPROM();
 }
 
@@ -275,7 +283,7 @@ bool IOTPlatform::_userExists(const char *userName, const char *server)
 {
     client.setServer(server, 8883);
 
-    if (this->_connectWith((String("guest=") + this->_device.getId()).c_str(), userName))
+    if (this->_connectWith((String("guest=") + this->_device.getId()).c_str(), userName, server))
     {
         this->client.disconnect();
         return true;
