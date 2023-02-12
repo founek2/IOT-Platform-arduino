@@ -79,6 +79,8 @@ void IOTPlatform::init()
                                 Serial.print("setAPcallback");
                                 
                                  this->wifiStatus = WifiStatus::CAPTIVE_PORTAL; });
+    if (this->mem.getPairStatus() == PairStatus::PAIR_STATUS_PAIRED)
+        wifiManager.setDisableConfigPortal(true);
 
     this->loop();
 }
