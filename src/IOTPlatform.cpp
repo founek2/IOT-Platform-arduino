@@ -1,95 +1,84 @@
-#include <WiFiClientSecure.h>
 #include <EEPROM.h>
 #include <IOTPlatform.h>
+#include <WiFiManager.h>
 
 // const char fingerprint[] = "7C:77:E9:A0:BB:42:C5:1D:09:1B:E4:BF:7F:9E:32:A7:54:AD:4C:19"; // localhost
 // const char fingerprint[] = "90:72:F4:F6:D6:4D:EA:76:6C:B7:14:B3:DD:CE:CC:DD:8E:F7:4E:E7"; // v2.iot
 // const char fingerprint[] = "62:5B:96:DF:D5:BE:4B:7C:44:FE:DF:68:AF:8D:8D:8D:6C:A6:DA:E6"; // test.iot
 const char fingerprint[] = "B0:F6:60:AF:B6:21:6A:B1:19:4D:41:D3:37:DE:50:5D:B2:1F:96:9A"; // home.iot
 
+WiFiManager wifiManager;
+
 WiFiManagerParameter custom_username("username", "Uživ. jméno", "", realmMaxLen - 1);
 WiFiManagerParameter custom_mqtt_server("server", "Platforma URL", "iotdomu.cz", serverMaxLen - 1);
 
 const char *menu[] = {"wifi"};
-bool IOTPlatform::captivePortal(const char *SSID)
+void IOTPlatform::autoConnectAsync()
 {
-    // this->mem.clearEEPROM();
-    // wifiManager.erase();
-    WiFi.mode(WIFI_STA);
+    Serial.println("Running autoConnectAsync");
+    wifiManager.setConnectTimeout(10);
 
-    Serial.println("entering captivePortal");
+    this->wifiStatus = WifiStatus::CONNECTING;
+    bool connected = wifiManager.autoConnect(this->SSID);
 
-    this.wifiManager.setMenu(menu, 1);
-    this.wifiManager.setConfigPortalTimeout(300);
-    this.wifiManager.setShowInfoUpdate(false);
-
-    this.wifiManager.addParameter(&custom_username);
-    this.wifiManager.addParameter(&custom_mqtt_server);
-
-    // this.wifiManager.setConfigPortalBlocking(false);
-
-    bool shouldSaveParams = false;
-    this.wifiManager.setSaveParamsCallback([&shouldSaveParams]()
-                                           {
-                                          Serial.println("setSaveParamsCallonback");
-                                          shouldSaveParams = true; });
-
-    bool statusOk = false;
-    while (statusOk == false)
+    if (connected)
     {
-        Serial.println("Connecting");
-        bool isConnected = this.wifiManager.autoConnect(SSID);
-        if (!isConnected)
-            continue;
-
-        Serial.print("shouldSaveParams");
-        Serial.println(shouldSaveParams);
-
-        if (shouldSaveParams)
-        {
-            if (this->_userExists(custom_username.getValue(), custom_mqtt_server.getValue()))
-            {
-                this->mem.setServerAndRealm(custom_mqtt_server.getValue(), custom_username.getValue());
-                this->_device.setRealm(this->mem.getRealm());
-                this->client.disconnect();
-            }
-        }
-        else
-        {
-            this->mem.loadEEPROM();
-            this->_device.setRealm(this->mem.getRealm());
-        }
-
-        if (this->mem.getPairStatus() != PAIR_STATUS_BLANK)
-        {
-            statusOk = true;
-        }
-        else
-            this.wifiManager.erase();
+        this->wifiStatus = WifiStatus::CONNECTED;
     }
-
-    // this->mem.setServerAndRealm("dev.iotplatforma.cloud", "martas");
-    // this->_device.setRealm(this->mem.getRealm());
-    return this.wifiManager.getWiFiIsSaved();
+}
+void IOTPlatform::_saveWifiParams()
+{
+    if (this->_userExists(custom_username.getValue(), custom_mqtt_server.getValue()))
+    {
+        Serial.println("Saving params");
+        this->mem.setServerAndRealm(custom_mqtt_server.getValue(), custom_username.getValue());
+        this->_device.setRealm(this->mem.getRealm());
+        this->wifiStatus = WifiStatus::CONNECTED;
+    }
+    else
+    {
+        Serial.println("Invalid parameters provided");
+        this->wifiStatus = WifiStatus::PARAMETERS_INVALID;
+    }
 }
 
-IOTPlatform::IOTPlatform(const char *deviceName) : mem(), wifiClient(), client(350, this->wifiClient), _device(deviceName, &this->client)
+IOTPlatform::IOTPlatform(const char *deviceName) : wifiStatus(WifiStatus::DISCONNECTED), client(350), mem(), _device(deviceName, &this->client)
 {
-
-    // wifiClient.setFingerprint(fingerprint);
-    client.setKeepAlive(15);
 }
 
-void IOTPlatform::start()
+void IOTPlatform::init()
 {
+    Serial.println("Running init method");
+    WiFi.mode(WIFI_STA);
+    randomSeed(micros());
+
+    // Memory sync
     this->mem.init();
+    this->mem.loadEEPROM();
+    this->_device.setRealm(this->mem.getRealm());
 
-    wifiClient.setInsecure();
-    client.setServer(this->mem.getServer(), 8883);
+    // Client Init
+    this->client.setServer(this->mem.getServer(), 8883);
+    this->client.setKeepAlive(15);
+    this->client.onMessage([this](const char *topic, byte *payload, unsigned int length)
+                           { this->_handleSubscribe(topic, payload, length); });
 
-    this->captivePortal();
-    // bool result = client.setBufferSize(350);
-    // Serial.printf("Starting buffer=%d", result);
+    // ------------------------------------------------------
+
+    wifiManager.setMenu(menu, 1);
+    // wifiManager.setConfigPortalTimeout(300);   // not working in non-blocking
+    wifiManager.setShowInfoUpdate(false);
+    wifiManager.addParameter(&custom_username);
+    wifiManager.addParameter(&custom_mqtt_server);
+    wifiManager.setConfigPortalBlocking(false);
+
+    wifiManager.setSaveConfigCallback([this]()
+                                      { this->wifiStatus = WifiStatus::PARAMETERS_TO_BE_SAVED; });
+    wifiManager.setAPCallback([this](void *_)
+                              {
+                                Serial.print("setAPcallback");
+                                
+                                 this->wifiStatus = WifiStatus::CAPTIVE_PORTAL; });
 
     this->loop();
 }
@@ -105,7 +94,11 @@ bool IOTPlatform::_connect()
         return this->_connectPaired();
     }
     else
-        Serial.println("Error> pairStatus should be at least PAIR_STATUS_INIT");
+    {
+        Serial.println("Error> pairStatus should be at least PAIR_STATUS_INIT, reseting wifi");
+        wifiManager.erase();
+        this->wifiStatus = WifiStatus::DISCONNECTED;
+    }
 
     return false;
 }
@@ -115,7 +108,6 @@ bool IOTPlatform::_connectWith(const char *userName, const char *password, const
     Serial.printf("_connectWith ID=%s, userName=%s, password=%s, server=%s\n", this->_device.getId(), userName, password, server);
     client.setServer(server, 8883);
 
-    randomSeed(micros());
     while (!client.connected() && counter > 0)
     {
         Serial.print("Attempting MQTT connection...");
@@ -125,8 +117,6 @@ bool IOTPlatform::_connectWith(const char *userName, const char *password, const
         if (client.connect(clientId.c_str(), userName, password, (this->_device.getTopic() + "/" + "$state").c_str(), 1, false, Status::lost))
         {
             Serial.println("connected");
-            client.onMessage([this](const char *topic, byte *payload, unsigned int length)
-                             { this->_handleSubscribe(topic, payload, length); });
             return true;
         }
         else
@@ -173,23 +163,70 @@ bool IOTPlatform::_connectPaired()
     return connected;
 }
 
-unsigned long myTime = 0;
+/* Calculate if should run another attempt
+ * check milis() overflow, check: lastAttempt - now > interval */
+bool shouldAttempt(unsigned long lastAttempt, unsigned long interval)
+{
+    auto now = millis();
+    return lastAttempt > now || now - lastAttempt > interval;
+}
+
+unsigned long lastMqttConnectionAttempt = 0;
+unsigned long lastWifiConnectAttempt = 0;
+const unsigned long WIFI_RECONNECT_INTERVAL = 5 * 60 * 1000;
+const unsigned long MQTT_RECONNECT_INTERVAL = 40 * 1000;
 
 void IOTPlatform::loop()
 {
-    client.loop();
+    wifiManager.process();
 
-    // when not connected and last tried > 30s (millis can overflow)
-    if (!client.connected() && (myTime == 0 || millis() - myTime >= 40 * 1000 || myTime > millis()))
+    switch (this->wifiStatus)
     {
-        myTime = millis();
-        Serial.print("Client disconnected, reconnecting. rc=");
-        Serial.println(this->client.state());
-        this->_connect();
+    case WifiStatus::DISCONNECTED:
+        Serial.println("Handeling disconnect");
+        lastWifiConnectAttempt = millis();
+        this->autoConnectAsync();
+        break;
+    case WifiStatus::PARAMETERS_TO_BE_SAVED:
+        Serial.println("Handling save parameters");
+        this->_saveWifiParams();
+        break;
+    case WifiStatus::PARAMETERS_INVALID:
+        Serial.println("Handling invalid parameters");
+        wifiManager.erase();
+        this->autoConnectAsync();
+        break;
     }
 
-    if (this->ota.enabled)
-        this->ota.handleOTA();
+    if (this->wifiStatus == WifiStatus::CONNECTED && WiFi.status() != WL_CONNECTED)
+    {
+        Serial.println("Handling WLAN disconnected");
+        this->wifiStatus = WifiStatus::DISCONNECTED;
+    }
+
+    if (this->wifiStatus == WifiStatus::CAPTIVE_PORTAL && shouldAttempt(lastWifiConnectAttempt, WIFI_RECONNECT_INTERVAL))
+    {
+        lastWifiConnectAttempt = millis();
+        Serial.println("Handling stop captive portal and reconnect");
+        wifiManager.stopConfigPortal();
+        this->autoConnectAsync();
+    }
+
+    if (this->wifiStatus == WifiStatus::CONNECTED)
+    {
+        client.loop();
+
+        if (!client.connected() && (lastMqttConnectionAttempt == 0 || shouldAttempt(lastMqttConnectionAttempt, MQTT_RECONNECT_INTERVAL)))
+        {
+            lastMqttConnectionAttempt = millis();
+            Serial.print("Client disconnected, reconnecting. rc=");
+            Serial.println(this->client.state());
+            this->_connect();
+        }
+
+        if (this->ota.enabled)
+            this->ota.handleOTA();
+    }
 }
 
 boolean IOTPlatform::connected(void)
@@ -200,7 +237,7 @@ boolean IOTPlatform::connected(void)
 void IOTPlatform::_handleSubscribe(const char *top, byte *payload, unsigned int len)
 {
     String topic = top;
-    payload[len] = '\0'; // possible error
+    payload[len] = '\0'; // possible error, but since internal buffers are large, should be OK
     Serial.print("topic ");
     Serial.println(topic.c_str());
     Serial.print("payload ");
@@ -270,7 +307,7 @@ void IOTPlatform::sleep()
 
 void IOTPlatform::reset()
 {
-    this.wifiManager.erase();
+    wifiManager.erase();
     this->mem.clearEEPROM();
 }
 
@@ -283,6 +320,7 @@ bool IOTPlatform::_userExists(const char *userName, const char *server)
 {
     client.setServer(server, 8883);
 
+    Serial.println("Checking user existence");
     if (this->_connectWith((String("guest=") + this->_device.getId()).c_str(), userName, server))
     {
         this->client.disconnect();
@@ -300,4 +338,12 @@ bool IOTPlatform::isInit()
 bool IOTPlatform::isPaired()
 {
     return this->mem.isPaired();
+}
+
+ConnectionStatus IOTPlatform::state()
+{
+    if (this->wifiStatus == WifiStatus::CONNECTED)
+        return ConnectionStatus::CONNECTED;
+    else
+        return ConnectionStatus::DISCONNECTED;
 }

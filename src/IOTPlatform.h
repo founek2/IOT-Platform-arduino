@@ -1,23 +1,37 @@
-#include <WiFiClientSecure.h>
 #include <Ota.h>
-#include <WiFiManager.h>
 #include <Memory.h>
 #include <Device.h>
 #include <MqttClient.h>
-#include <WiFiManager.h>
 
 #ifndef IOTPlatform_H
 #define IOTPlatform_H
 
+enum class WifiStatus
+{
+    DISCONNECTED,
+    CAPTIVE_PORTAL,
+    CAPTIVE_PORTAL_SHUTING_DOWN,
+    PARAMETERS_TO_BE_SAVED,
+    PARAMETERS_SAVED,
+    PARAMETERS_INVALID,
+    CONNECTING,
+    CONNECTED,
+};
+
+enum class ConnectionStatus
+{
+    DISCONNECTED,
+    CONNECTED,
+};
+
 class IOTPlatform
 {
-    WiFiClientSecure wifiClient;
-    WiFiManager wifiManager;
+    WifiStatus wifiStatus;
     MqttClient client;
     Ota ota;
     Memory mem;
     Device _device;
-
+    const char *SSID = "Nastav mě";
     /**
      * Check if topic is for control -> localHandle, else -> defaultHandler
      */
@@ -31,6 +45,7 @@ class IOTPlatform
     bool _connectWith(const char *userName, const char *password, const char *server, int counter = 2);
     bool _connect();
     bool _userExists(const char *userName, const char *server);
+    void _saveWifiParams();
 
 public:
     IOTPlatform(const char *deviceName);
@@ -40,12 +55,12 @@ public:
     /**
      * Connect to wifi with provided credentials
      */
-    bool captivePortal(const char *SSID = "Nastav mě");
+    void autoConnectAsync();
 
     /**
      * Initialize topic and connect to mqtt broker
      */
-    void start();
+    void init();
 
     /**
      * Loop for handling mqtt connection
@@ -79,6 +94,8 @@ public:
      * Whether waiting to be add
      */
     bool isInit();
+
+    ConnectionStatus state();
 };
 
 #endif

@@ -4,6 +4,7 @@
 #include <PubSubClient.h>
 #endif
 
+#include <WiFiClientSecure.h>
 #include <Base.h>
 #include <Client.h>
 #include <functional>
@@ -21,9 +22,11 @@ class MqttClient
 #endif
 
     MY_MQTT_CALLBACK_SIGNATURE;
+    WiFiClientSecure wifiClient;
+    int bufferSize;
 
 public:
-    MqttClient(const int bufferSize, Client &client);
+    MqttClient(const int bufferSize);
 
     MqttClient *setServer(const char *server, int port);
 

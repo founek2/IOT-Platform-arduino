@@ -35,6 +35,7 @@ Node *Device::NewNode(const char *nodeId, const char *name, NodeType type)
 
 void Device::announce()
 {
+    Serial.println("Announcing device");
     this->client->publish((this->getTopic() + "/" + "$homie").c_str(), "4.0.0", true, 1);
     this->client->publish((this->getTopic() + "/" + "$name").c_str(), this->getName(), true, 1);
     this->client->publish((this->getTopic() + "/" + "$realm").c_str(), this->realm.c_str(), true, 1);
@@ -48,7 +49,7 @@ void Device::announce()
         if (i < this->_nodes.size() - 1)
             nodesList += ",";
     }
-    Serial.print("nodeList");
+
     Serial.println(nodesList);
     if (this->_nodes.size() > 0)
         this->client->publish((this->getTopic() + "/" + "$nodes").c_str(), nodesList.c_str(), true, 1);

@@ -1,18 +1,18 @@
-#ifdef ESP32
-#include <MQTT.h>
-#else
-#include <PubSubClient.h>
-#endif
-
 #include <MqttClient.h>
 
-MqttClient::MqttClient(const int bufferSize, Client &client)
-{
+MqttClient::MqttClient(const int bufferSize) : wifiClient(),
 #ifdef ESP32
-    this->client = MQTTClient(bufferSize);
-    this->client.begin(client);
+                                               client(bufferSize)
 #else
-    this->client = PubSubClient(client);
+                                               client(this->wifiClient);
+#endif
+{
+    this->bufferSize = bufferSize;
+    this->wifiClient.setInsecure();
+
+#ifdef ESP32
+    this->client.begin(this->wifiClient);
+#else
     this->client.setBufferSize(bufferSize);
 #endif
 }
@@ -109,8 +109,8 @@ void MqttClient::onMessage(MY_MQTT_CALLBACK_SIGNATURE)
 {
     this->callback = callback;
 #ifdef ESP32
-    this->client.onMessage([this](String &topic, String &payload)
-                           { this->callback(topic.c_str(), (byte *)payload.c_str(), payload.length()); });
+    this->client.onMessageAdvanced([this](MQTTClient *client, char topic[], char bytes[], int length)
+                                   { this->callback(topic, (byte *)bytes, length); });
 #else
     this->client.setCallback(this->callback);
 #endif
