@@ -28,14 +28,16 @@ void PropertyMy::announce()
         client->publish((topic + "/" + "$class").c_str(), propertyClassMap[to_underlying(this->getClass())], true, 1);
     client->publish((topic + "/" + "$datatype").c_str(), dataTypeMap[to_underlying(this->getDatatype())], true, 1);
 
-    if (this->getUnit()[0] != '\0')
-        client->publish((topic + "/" + "$unit").c_str(), this->getUnit(), true, 1);
-    if (this->getFormat()[0] != '\0')
-        client->publish((topic + "/" + "$format").c_str(), this->getFormat(), true, 1);
+    if (!this->getUnit().isEmpty())
+        client->publish((topic + "/" + "$unit").c_str(), this->getUnit().c_str(), true, 1);
+    if (!this->getFormat().isEmpty())
+        client->publish((topic + "/" + "$format").c_str(), this->getFormat().c_str(), true, 1);
     if (this->isSettable() == true)
         client->publish((topic + "/" + "$settable").c_str(), "true", true, 1);
     if (this->isRetainable() == true)
         client->publish((topic + "/" + "$retained").c_str(), "true", true, 1);
+    if (!this->getValue().isEmpty()) // TODO check if this works
+        client->publish((topic + "/" + this->getName()).c_str(), this->getValue().c_str(), true, 1);
 }
 
 void PropertyMy::subscribe()

@@ -45,9 +45,9 @@ public:
 
     void setCallback(std::function<void(Property *)> callback);
 
-    const char *getUnit();
+    String &getUnit();
     DataType getDatatype();
-    const char *getFormat();
+    String &getFormat();
     PropertyClass getClass();
     bool isSettable();
     bool isRetainable();

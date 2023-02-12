@@ -1,6 +1,6 @@
 #include "Property.h"
 
-Property::Property(const char *propertyId, const char *name, DataType datatype) : Base(propertyId, name), _datatype(datatype) {};
+Property::Property(const char *propertyId, const char *name, DataType datatype) : Base(propertyId, name), _datatype(datatype){};
 
 void Property::setUnit(const char *unit)
 {
@@ -41,17 +41,17 @@ void Property::setCallback(std::function<void(Property *)> callback)
     this->_callback = callback;
 }
 
-const char *Property::getUnit()
+String &Property::getUnit()
 {
-    return this->_unit.c_str();
+    return this->_unit;
 }
 DataType Property::getDatatype()
 {
     return this->_datatype;
 }
-const char *Property::getFormat()
+String &Property::getFormat()
 {
-    return this->_format.c_str();
+    return this->_format;
 }
 PropertyClass Property::getClass()
 {
