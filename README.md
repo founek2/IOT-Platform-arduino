@@ -7,9 +7,10 @@ This library provides complex client for communication with [IoT Platform](https
 The library uses the PubSubClient for interacting with the
 MQTT. Curently are supported these boards:
 
--   ESP8266
+-   ESP8266 - mqtt library used is [PubSubClient](https://github.com/knolleary/pubsubclient)
+-   ESP32 - mqtt library used is [arduino-mqtt](https://github.com/256dpi/arduino-mqtt)
 
-Support for ESP32 might be easily added - I can`t test it now.
+> arduino-mqtt might work even with esp8266 but I did not test it. I have good experience with PubSubClient
 
 ## License
 
