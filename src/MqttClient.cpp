@@ -4,7 +4,7 @@ MqttClient::MqttClient(const int bufferSize) : wifiClient(),
 #ifdef ESP32
                                                client(bufferSize)
 #else
-                                               client(this->wifiClient);
+                                               client(this->wifiClient)
 #endif
 {
     this->bufferSize = bufferSize;

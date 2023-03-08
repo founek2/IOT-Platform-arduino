@@ -12,13 +12,10 @@ const char *Status::disconnected = "disconnected";
 
 Device::Device(const char *name, MqttClient *cl) : Base("ESP-1111", name), client(cl)
 {
-    uint64_t chipID = 0;
 #ifdef ESP8266
-    chipID = ESP.getChipId();
-#endif
-
-#ifdef ESP32
-    chipID = ESP.getEfuseMac();
+    uint64_t chipID = ESP.getChipId();
+#elif ESP32
+    uint64_t chipID = ESP.getEfuseMac();
 #endif
 
     snprintf(this->id + 4, 9, "%llX", chipID);
@@ -39,7 +36,12 @@ void Device::announce()
     this->client->publish((this->getTopic() + "/" + "$homie").c_str(), "4.0.0", true, 1);
     this->client->publish((this->getTopic() + "/" + "$name").c_str(), this->getName(), true, 1);
     this->client->publish((this->getTopic() + "/" + "$realm").c_str(), this->realm.c_str(), true, 1);
+
+#ifdef ESP8266
     this->client->publish((this->getTopic() + "/" + "$implementation").c_str(), "esp8266", true, 1);
+#elif ESP32
+    this->client->publish((this->getTopic() + "/" + "$implementation").c_str(), "esp32", true, 1);
+#endif
 
     String nodesList = "";
     for (int i = 0; i < this->_nodes.size(); i++)

@@ -68,10 +68,10 @@ void Memory::_loadPairStatus()
 {
     uint16_t status;
     status = EEPROM.read(this->_addr_prefix);
+    status |= (uint16_t)EEPROM.read(this->_addr_prefix + 1) << 8;
+
     Serial.print("print raw status=");
     Serial.println(status);
-
-    status |= (uint16_t)EEPROM.read(this->_addr_prefix + 1) << 8;
 
     if (status == PAIR_STATUS_INIT || status == PAIR_STATUS_PAIRED)
         this->_pair_status = (PairStatus)status;

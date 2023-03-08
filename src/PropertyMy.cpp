@@ -52,22 +52,23 @@ void PropertyMy::subscribe()
 bool PropertyMy::setValue(const char *value)
 {
     Property::setValue(value);
-    Serial.printf("Setting value %s\n", value);
-    if (this->client->connected())
-    {
-        Serial.printf("publishing value %s\n", value);
-        return this->client->publish(this->getTopic().c_str(), value);
-    }
 
-    return false;
+    return this->_publishValue(value);
+}
+
+bool PropertyMy::_publishValue(const char *value)
+{
+    Serial.printf("publishing value %s\n", value);
+    return this->client->publish(this->getTopic().c_str(), value);
 }
 
 void PropertyMy::handleSubscribe(const String &topic, const char *payload)
 {
-    this->setValue(payload);
+    Property::setValue(payload);
     if (this->getCallback() != nullptr)
     {
-        this->getCallback()(this);
+        if (this->getCallback()(this))
+            this->_publishValue(payload);
     }
     else
         Serial.printf("callback not defined for propertyId=%s", this->getId());

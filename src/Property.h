@@ -31,7 +31,7 @@ class Property : public Base
     bool _settable = false;
     bool _retainable = false;
 
-    std::function<void(Property *)> _callback = nullptr;
+    std::function<bool(Property *)> _callback = nullptr;
 
 public:
     Property(const char *propertyId, const char *name, DataType datatype);
@@ -43,7 +43,7 @@ public:
     void setSettable(bool isSetable);
     void setRetainable(bool retain);
 
-    void setCallback(std::function<void(Property *)> callback);
+    void setCallback(std::function<bool(Property *)> callback);
 
     String &getUnit();
     DataType getDatatype();
@@ -52,7 +52,7 @@ public:
     bool isSettable();
     bool isRetainable();
     const String &getValue();
-    std::function<void(Property *)> getCallback();
+    std::function<bool(Property *)> getCallback();
 };
 
 #endif

@@ -9,6 +9,8 @@ class PropertyMy : public Property
 {
     MqttClient *client;
 
+    bool _publishValue(const char *value);
+
 public:
     PropertyMy(const char *propertyId, const char *name, DataType datatype, MqttClient *cl);
 

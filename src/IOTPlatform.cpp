@@ -80,7 +80,7 @@ void IOTPlatform::init()
                                 
                                  this->wifiStatus = WifiStatus::CAPTIVE_PORTAL; });
     if (this->mem.getPairStatus() == PairStatus::PAIR_STATUS_PAIRED)
-        wifiManager.setDisableConfigPortal(true);
+        wifiManager.setEnableConfigPortal(false);
 
     this->loop();
 }
@@ -206,11 +206,10 @@ void IOTPlatform::loop()
         this->wifiStatus = WifiStatus::DISCONNECTED;
     }
 
-    if (this->wifiStatus == WifiStatus::CAPTIVE_PORTAL && shouldAttempt(lastWifiConnectAttempt, WIFI_RECONNECT_INTERVAL))
+    if ((this->wifiStatus == WifiStatus::CONNECTING || this->wifiStatus == WifiStatus::CAPTIVE_PORTAL) && shouldAttempt(lastWifiConnectAttempt, WIFI_RECONNECT_INTERVAL))
     {
         lastWifiConnectAttempt = millis();
-        Serial.println("Handling stop captive portal and reconnect");
-        wifiManager.stopConfigPortal();
+        Serial.println("Handling reconnect");
         this->autoConnectAsync();
     }
 

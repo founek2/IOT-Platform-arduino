@@ -21,6 +21,7 @@ void Property::setClass(PropertyClass propertyClass)
 
 bool Property::setValue(const char *value)
 {
+    Serial.printf("Setting value %s\n", value);
     this->_value = value;
 
     return true;
@@ -36,7 +37,7 @@ const String &Property::getValue()
     return this->_value;
 }
 
-void Property::setCallback(std::function<void(Property *)> callback)
+void Property::setCallback(std::function<bool(Property *)> callback)
 {
     this->_callback = callback;
 }
@@ -67,7 +68,7 @@ bool Property::isRetainable()
     return this->_retainable;
 }
 
-std::function<void(Property *)> Property::getCallback()
+std::function<bool(Property *)> Property::getCallback()
 {
     return this->_callback;
 }
