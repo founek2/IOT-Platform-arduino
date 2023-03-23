@@ -2,11 +2,6 @@
 #include <IOTPlatform.h>
 #include <WiFiManager.h>
 
-// const char fingerprint[] = "7C:77:E9:A0:BB:42:C5:1D:09:1B:E4:BF:7F:9E:32:A7:54:AD:4C:19"; // localhost
-// const char fingerprint[] = "90:72:F4:F6:D6:4D:EA:76:6C:B7:14:B3:DD:CE:CC:DD:8E:F7:4E:E7"; // v2.iot
-// const char fingerprint[] = "62:5B:96:DF:D5:BE:4B:7C:44:FE:DF:68:AF:8D:8D:8D:6C:A6:DA:E6"; // test.iot
-const char fingerprint[] = "B0:F6:60:AF:B6:21:6A:B1:19:4D:41:D3:37:DE:50:5D:B2:1F:96:9A"; // home.iot
-
 WiFiManager wifiManager;
 
 WiFiManagerParameter custom_username("username", "Uživ. jméno", "", realmMaxLen - 1);
@@ -42,11 +37,11 @@ void IOTPlatform::_saveWifiParams()
     }
 }
 
-IOTPlatform::IOTPlatform(const char *deviceName) : wifiStatus(WifiStatus::DISCONNECTED), client(350), mem(), _device(deviceName, &this->client)
+IOTPlatform::IOTPlatform(const char *deviceName, bool disablePortalWhenPaired) : _disablePortalWhenPaired(disablePortalWhenPaired), wifiStatus(WifiStatus::DISCONNECTED), client(350), mem(), _device(deviceName, &this->client)
 {
 }
 
-void IOTPlatform::init()
+void IOTPlatform::_init()
 {
     Serial.println("Running init method");
     WiFi.mode(WIFI_STA);
@@ -79,10 +74,10 @@ void IOTPlatform::init()
                                 Serial.print("setAPcallback");
                                 
                                  this->wifiStatus = WifiStatus::CAPTIVE_PORTAL; });
-    if (this->mem.getPairStatus() == PairStatus::PAIR_STATUS_PAIRED)
+    if (this->mem.getPairStatus() == PairStatus::PAIR_STATUS_PAIRED && this->_disablePortalWhenPaired)
         wifiManager.setEnableConfigPortal(false);
 
-    this->loop();
+    this->_initialized = true;
 }
 
 bool IOTPlatform::_connect()
@@ -157,7 +152,7 @@ bool IOTPlatform::_connectPaired()
     {
         this->client.subscribe((this->_device.getTopic() + "/$cmd/set").c_str());
         this->_device.publishStatus(Status::init);
-        this->_device.announce();
+        this->_device.announceValues();
         this->_device.subscribe();
         this->_device.publishStatus(Status::ready);
     }
@@ -180,6 +175,10 @@ const unsigned long MQTT_RECONNECT_INTERVAL = 40 * 1000;
 
 void IOTPlatform::loop()
 {
+    // first run just init everything, second run will proceed to connection
+    if (!this->_initialized)
+        return this->_init();
+
     wifiManager.process();
 
     switch (this->wifiStatus)

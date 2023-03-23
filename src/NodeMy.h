@@ -20,6 +20,7 @@ public:
     void setTopic(String topic);
 
     void announce();
+    void announceValues();
     void subscribe();
 
     void handleSubscribe(const String &topic, const char *payload);

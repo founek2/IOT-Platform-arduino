@@ -16,6 +16,7 @@ public:
 
     bool setValue(const char *value);
     void announce();
+    bool announceValue();
     void subscribe();
 
     void handleSubscribe(const String &topic, const char *payload);

@@ -62,6 +62,14 @@ bool PropertyMy::_publishValue(const char *value)
     return this->client->publish(this->getTopic().c_str(), value);
 }
 
+bool PropertyMy::announceValue()
+{
+    if (this->getValue().isEmpty())
+        return true;
+
+    return this->_publishValue(this->getValue().c_str());
+}
+
 void PropertyMy::handleSubscribe(const String &topic, const char *payload)
 {
     Property::setValue(payload);

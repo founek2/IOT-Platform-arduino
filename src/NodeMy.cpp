@@ -36,6 +36,16 @@ void NodeMy::announce()
         property->announce();
     }
 }
+void NodeMy::announceValues()
+{
+    Serial.printf("announce values node %s, topic %s\n", this->getId(), this->getTopic().c_str());
+
+    for (int i = 0; i < this->_properties.size(); i++)
+    {
+        auto property = this->_properties.get(i);
+        property->announceValue();
+    }
+}
 
 void NodeMy::subscribe()
 {

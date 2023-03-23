@@ -26,6 +26,8 @@ enum class ConnectionStatus
 
 class IOTPlatform
 {
+    bool _initialized = false;
+    bool _disablePortalWhenPaired = false;
     WifiStatus wifiStatus;
     MqttClient client;
     Ota ota;
@@ -46,9 +48,18 @@ class IOTPlatform
     bool _connect();
     bool _userExists(const char *userName, const char *server);
     void _saveWifiParams();
+    void _init();
 
 public:
-    IOTPlatform(const char *deviceName);
+    /**
+     * Setup platform
+     * By default when it is unable to connect to wifi it will spin up portal again for setup
+     * and re-try connect every 5 min
+     * If you want it just to re-try connect to wifi without spinning up config portal pass parametr true
+     * @param deviceName name of device which will display on UI
+     * @param disablePortalWhenPaired should provide true when device has some reset button/capability
+     */
+    IOTPlatform(const char *deviceName, bool disablePortalWhenPaired = false);
 
     Node *NewNode(const char *nodeId, const char *name, NodeType = NodeType::GENERIC);
 
@@ -56,11 +67,6 @@ public:
      * Connect to wifi with provided credentials
      */
     void autoConnectAsync();
-
-    /**
-     * Initialize topic and connect to mqtt broker
-     */
-    void init();
 
     /**
      * Loop for handling mqtt connection

@@ -28,6 +28,13 @@ class MqttClient
 public:
     MqttClient(const int bufferSize);
 
+    /**
+     * @brief Set connection target and validate certificate for known servers
+     *
+     * @param server domain name
+     * @param port
+     * @return MqttClient*
+     */
     MqttClient *setServer(const char *server, int port);
 
     bool connect(const char *clientID, const char *userName, const char *password, const char *willTopic, int willQoS, bool willRetain, const char *willMessage);

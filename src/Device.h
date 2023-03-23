@@ -41,7 +41,14 @@ public:
     void publishStatus(const char *status);
 
     const char *getId();
+    /**
+     * @brief Publish nodes and properties to MQTT
+     */
     void announce();
+    /**
+     * @brief Publish values of properties to MQTT
+     */
+    void announceValues();
     void subscribe();
 
     void setRealm(const char *realm);

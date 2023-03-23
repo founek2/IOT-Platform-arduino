@@ -63,6 +63,17 @@ void Device::announce()
     }
 }
 
+void Device::announceValues()
+{
+    Serial.println("Announcing values");
+
+    for (int i = 0; i < this->_nodes.size(); i++)
+    {
+        auto node = this->_nodes.get(i);
+        node->announceValues();
+    }
+}
+
 void Device::setRealm(const char *realm)
 {
     this->realm = realm;
