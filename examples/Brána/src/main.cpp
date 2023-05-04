@@ -1,33 +1,48 @@
 #include "IOTPlatform.h"
 
 bool RELAY_STATE = false;
-bool reset_pressed = false;
 int REALY_PIN = 12;
 int LED_PIN = 13;
 int BUTTON_PIN = 0;
-IOTPlatform plat("Brána");
+IOTPlatform plat("Brána", true);
 
 unsigned long buttonPressedAt = 0;
-int button_state = 1;
+int volatile button_released = 1;
+bool volatile resetDevice = false;
+bool volatile quickButtonPress = false;
 
-void ICACHE_RAM_ATTR interrupt_routine()
+bool shouldAttemptDebounce(unsigned long lastAttempt, unsigned long interval)
 {
-    button_state = digitalRead(BUTTON_PIN);
+    auto now = millis();
+    return lastAttempt > now || now - lastAttempt > interval;
+}
 
-    if (button_state == 0 && buttonPressedAt == 0)
-    {
+void IRAM_ATTR interrupt_routine()
+{
+    button_released = digitalRead(BUTTON_PIN);
+
+    if (button_released == LOW && buttonPressedAt == 0)
         buttonPressedAt = millis();
-        Serial.println("Button pressed");
-    }
-    else if (button_state == 1)
+    else if (button_released == HIGH && buttonPressedAt != 0)
     {
-        Serial.printf("Diff %d, %d, %d", millis(), buttonPressedAt, millis() - buttonPressedAt);
-        Serial.println("Button released");
-        if (buttonPressedAt != 0 && millis() - buttonPressedAt - 5 * 1000 > 0)
-            reset_pressed = true;
+        if (shouldAttemptDebounce(buttonPressedAt, 5 * 1000))
+            resetDevice = true;
+        else
+            quickButtonPress = true;
 
         buttonPressedAt = 0;
     }
+}
+
+void switchRelay()
+{
+    digitalWrite(REALY_PIN, HIGH);
+    digitalWrite(LED_PIN, LOW);
+
+    delay(400);
+
+    digitalWrite(LED_PIN, HIGH);
+    digitalWrite(REALY_PIN, LOW);
 }
 
 void setup()
@@ -50,27 +65,25 @@ void setup()
     prop->setFormat("on");
     prop->setSettable(true);
     prop->setCallback([](Property *prop)
-                      {
-                          digitalWrite(REALY_PIN, HIGH);
-                          digitalWrite(LED_PIN, LOW);
-
-                          delay(400);
-
-                          digitalWrite(LED_PIN, HIGH);
-                          digitalWrite(REALY_PIN, LOW);
-                      });
+                      { 
+                        switchRelay();
+                        return true; });
 
     plat.enableOTA("123456777", 8266, "esp-brana");
-    plat.start();
 
     digitalWrite(LED_PIN, HIGH);
 }
 
 void loop()
 {
-    if (reset_pressed)
+    if (quickButtonPress)
     {
-        reset_pressed = false;
+        quickButtonPress = false;
+        Serial.println("quick press");
+        switchRelay();
+    }
+    else if (resetDevice)
+    {
         Serial.println("reseting");
         plat.disconnect();
         plat.reset();

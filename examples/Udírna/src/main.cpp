@@ -52,14 +52,17 @@ void enableRefreshUpTime();
 void enableReadTemperature();
 void configModeCallback(WiFiManager *myWifiManager);
 
+void showWifiManual();
+
 Property *propTemp;
 
 void setup()
 {
     Serial.begin(115200);
     delay(300);
+    // plat.reset();
 
-    Node *node = plat.NewNode("sensor0", "Senzor", NodeType::SENSOR);
+    Node *node = plat.NewNode("smokehouse", "Udírna", NodeType::SENSOR);
     propTemp = node->NewProperty("temperature", "Teplota", DataType::FLOAT);
     propTemp->setClass(PropertyClass::TEMPERATURE);
     propTemp->setUnit("°C");
@@ -69,60 +72,20 @@ void setup()
     tft.begin();
     tft.setRotation(2);
     tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
-    tft.fillScreen(ILI9341_BLACK);
-
-    //tft.drawCircle(10, 246, 7, ILI9341_YELLOW);
 
     /* Show manual for wifi manager */
-    tft.setCursor(0, 20);
-    tft.setTextSize(2);
-    tft.println("Pro nastaveni site:");
-    tft.setTextSize(1);
-    int offY = 41;
-    tft.setCursor(0, offY);
-    tft.println("1. pripojte se k wifi 'udirna'");
-    tft.setCursor(0, offY + 10);
-    tft.println("2. kliknete na prihlasit");
-    tft.setCursor(0, offY + 10 * 2);
-    tft.println("   nebo otevrte http://192.168.4.1");
-    tft.setCursor(0, offY + 10 * 3);
-    tft.println("3. vyberte 'Configure wifi'");
-    tft.setCursor(0, offY + 10 * 4);
-    tft.println("4. zadejte ssid, heslo");
-    tft.println("   a uzivatelske jmeno");
-    tft.println("5. uložte");
-
-    tft.setCursor(0, 160);
-    tft.println("Zapojeni sondy:");
-    tft.fillRect(4, 173, 12, 40 + 4, ILI9341_DARKGREY);
-    const int offY2 = 180;
-    const int a = 6;
-    tft.fillRect(7, offY2, a, a, ILI9341_BLACK);
-    tft.fillRect(7, offY2 + 13, a, a, ILI9341_RED);
-    tft.fillRect(7, offY2 + 13 * 2, a, a, ILI9341_YELLOW);
-
-    tft.setCursor(0, 278);
-    tft.println("IP adresa: 192.168.4.1");
-
-    tft.setCursor(0, 290);
-    tft.println("WIFI: connecting");
+    showWifiManual();
 
     /* Open captive portal */
     plat.enableOTA("123456777");
-    plat.start();
 
     /* Reset screen */
     tft.fillScreen(ILI9341_BLACK);
 
+    // if (plat.isInit) {}
+
     /* Show wifi status */
-    if (WiFi.status() != WL_CONNECTED)
-    {
-        printWifiStatus("WIFI: Can't connect", WiFi.localIP());
-    }
-    else
-    {
-        printWifiStatus("WIFI: connected", WiFi.localIP());
-    }
+    printWifiStatus("WIFI: connected", WiFi.localIP());
 
     timeClient.begin();
     timeClient.setTimeOffset(3600 * 2);
@@ -137,17 +100,18 @@ void setup()
 
     tft.setCursor(0, 20);
     tft.setTextSize(1);
-    tft.println("Teplota (*C):");
+    tft.println("Teplota (°C):");
     tft.setCursor(0, 170);
-    tft.println("Time:");
+    tft.println("Cas:");
 
     tft.setFont();
 
-    tft.setCursor(60, 303);
-    tft.println("v3.IOTplatforma.cloud");
+    // tft.setCursor(60, 303);
+    // tft.println("v3.IOTplatforma.cloud");
+    tft.setCursor(70, 303);
+    tft.println("iotdomu.cz");
 
     refreshTemperature();
-    Serial.println("ahoj");
     refreshTime();
 
     startupTime = timeClient.getEpochTime();
@@ -198,7 +162,7 @@ void refreshTemperature()
     Serial.print("C = ");
     Serial.println(temp);
 
-    //tft.fillRect(70, 50, 100, 70, ILI9341_BLACK);
+    // tft.fillRect(70, 50, 100, 70, ILI9341_BLACK);
     tft.setTextSize(8);
     tft.setCursor(0, 60);
     tft.setTextColor(ILI9341_YELLOW, ILI9341_BLACK);
@@ -244,8 +208,8 @@ void updateUpTime()
     const int UPmin = minutes % 60;
 
     tft.setCursor(54, 246);
-    String sHours = UPhours >= 10 ? UPhours : String("0") + UPhours;
-    String sMin = UPmin >= 10 ? UPmin : String("0") + UPmin;
+    String sHours = UPhours >= 10 ? String(UPhours) : String("0") + UPhours;
+    String sMin = UPmin >= 10 ? String(UPmin) : String("0") + UPmin;
     tft.print(sHours + ":" + sMin);
 }
 
@@ -311,7 +275,69 @@ void configModeCallback(WiFiManager *myWiFiManager)
 {
     Serial.println("callback");
     Serial.println(WiFi.softAPIP());
-    //if you used auto generated SSID, print it
+    // if you used auto generated SSID, print it
     Serial.println(myWiFiManager->getConfigPortalSSID());
     // printWifiStatus("Can't connect to " + String(ssid), WiFi.localIP());
+}
+
+void showWifiManual()
+{
+    tft.fillScreen(ILI9341_BLACK);
+
+    tft.setCursor(0, 20);
+    tft.setTextSize(2);
+    tft.println("Pro nastaveni site:");
+    tft.setTextSize(1);
+    int offY = 41;
+    tft.setCursor(0, offY);
+    tft.println("1. pripojte se k wifi 'Nastav me'");
+    tft.setCursor(0, offY + 10);
+    tft.println("2. kliknete na prihlasit");
+    tft.setCursor(0, offY + 10 * 2);
+    tft.println("   nebo otevrte http://192.168.4.1");
+    tft.setCursor(0, offY + 10 * 3);
+    tft.println("3. vyberte 'Configure wifi'");
+    tft.setCursor(0, offY + 10 * 4);
+    tft.println("4. zadejte ssid, heslo");
+    tft.setCursor(0, offY + 10 * 5);
+    tft.println("   a uzivatelske jmeno");
+    tft.setCursor(0, offY + 10 * 6);
+    tft.println("5. ulozte");
+
+    tft.setCursor(0, 160);
+    tft.println("Zapojeni sondy:");
+    tft.fillRect(4, 173, 12, 40 + 4, ILI9341_DARKGREY);
+    const int offY2 = 180;
+    const int a = 6;
+    tft.fillRect(7, offY2, a, a, ILI9341_BLACK);
+    tft.fillRect(7, offY2 + 13, a, a, ILI9341_RED);
+    tft.fillRect(7, offY2 + 13 * 2, a, a, ILI9341_YELLOW);
+
+    tft.setCursor(0, 278);
+    tft.println("IP adresa: 192.168.4.1");
+
+    tft.setCursor(0, 290);
+    tft.println("WIFI: connecting");
+}
+
+void showPlatformManual()
+{
+    tft.fillScreen(ILI9341_BLACK);
+
+    tft.setCursor(0, 20);
+    tft.setTextSize(2);
+    tft.println("Pro pridani zarizeni:");
+    tft.setTextSize(1);
+    int offY = 41;
+    tft.setCursor(0, offY);
+    tft.println("1. prihlaste/zaregistrujte se");
+    tft.setCursor(0, offY + 10 * 2);
+    tft.println("   na strance iotdomu.cz");
+    tft.setCursor(0, offY + 10 * 3);
+    tft.println("2. kliknete v menu na zarizeni");
+    tft.setCursor(0, offY + 10 * 4);
+    tft.println("3. pridejte nove zarizeni Udirna");
+
+    tft.setCursor(0, 290);
+    tft.println("WIFI: connected");
 }

@@ -55,7 +55,6 @@ void setup()
     tempSensor.begin();
 
     plat.enableOTA("123456777", 8266, "esp-meteo");
-    plat.start();
 
     ticker.attach(15 * 60, []()
                   { SEND_MEASUREMENTS = true; });

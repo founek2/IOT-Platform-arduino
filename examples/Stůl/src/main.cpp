@@ -78,7 +78,7 @@ void setup()
 
                                 switchL->setValue(RELAY1_STATE ? "true" : "false");
                                 switchR->setValue(RELAY2_STATE ? "true" : "false");
-                            });
+                                return true; });
 
     switchL = nodeSwitch->NewProperty("left", "Levé", DataType::BOOLEAN);
     switchL->setSettable(true);
@@ -92,7 +92,7 @@ void setup()
                                  RELAY1_STATE = false;
 
                              processStates();
-                         });
+                             return true; });
 
     switchR = nodeSwitch->NewProperty("right", "Pravé", DataType::BOOLEAN);
     switchR->setSettable(true);
@@ -106,7 +106,7 @@ void setup()
                                  RELAY2_STATE = false;
 
                              processStates();
-                         });
+                             return true; });
 
     Node *temp = plat.NewNode("sensor0", "Teplota", NodeType::SENSOR);
     propTemp = temp->NewProperty("temperature", "Teplota", DataType::FLOAT);
@@ -117,21 +117,22 @@ void setup()
     recieverPower = reciever->NewProperty("power", "Zapnutí", DataType::BOOLEAN);
     recieverPower->setSettable(true);
     recieverPower->setCallback([](Property *prop)
-                               { recieverChange = true; });
+                               { recieverChange = true;
+                               return true; });
 
     recieverVolume = reciever->NewProperty("volume", "Hlasitost", DataType::INTEGER);
     recieverVolume->setFormat("0:80");
     recieverVolume->setSettable(true);
     recieverVolume->setCallback([](Property *prop)
-                                { recieverChange = true; });
+                                { recieverChange = true;
+                                return true; });
 
     recieverInput = reciever->NewProperty("input", "Vstup", DataType::ENUM);
     recieverInput->setFormat("net_radio,bluetooth,airplay,tuner,spotify");
     recieverInput->setSettable(true);
     recieverInput->setCallback([](Property *prop)
-                               { recieverChange = true; });
-
-    plat.start();
+                               { recieverChange = true;
+                               return true; });
 
     tempSensor.begin();
 
@@ -235,8 +236,8 @@ void processStates()
         propSwitch->setValue("false");
 }
 
-const String NUM_1_HEX = "40BD00FF"; //1
-const String NUM_2_HEX = "40BD807F"; //2
+const String NUM_1_HEX = "40BD00FF"; // 1
+const String NUM_2_HEX = "40BD807F"; // 2
 const String NUM_3_HEX = "40BD40BF";
 const String POWER_HEX = "40BDA25D";
 const String UP_HEX = "40BD48B7";

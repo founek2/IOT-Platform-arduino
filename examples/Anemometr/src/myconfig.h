@@ -11,6 +11,6 @@ const bool debugOutput = true; // set to true for serial OUTPUT
 
 /*************************************************/
 /* Settings for number of reed contacts in       */
-/* abenometer                                    */
+/* anenometer                                    */
 /*************************************************/
 const float number_reed = 2;

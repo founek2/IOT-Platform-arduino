@@ -34,13 +34,12 @@ void setup()
     propSwitch = nodeSwitch->NewProperty("power", "Postel led", DataType::BOOLEAN);
     propSwitch->setSettable(true);
     propSwitch->setCallback([](Property *property)
-                            { 
-                                digitalWrite(LED_PIN, property->getValue() == "true" ? HIGH : LOW); 
-                                return true; });
+                            { digitalWrite(LED_PIN, property->getValue() == "true" ? HIGH : LOW); });
 
     plat.enableOTA("123456777");
+    plat.start();
 
-    propSwitch->setValue(pir_state ? "true" : false);
+    propSwitch->setValue(pir_state ? "true" : "false");
 }
 
 int last_state = 0;

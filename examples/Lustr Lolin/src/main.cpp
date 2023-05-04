@@ -3,31 +3,39 @@
 // const char *ssid = "MujO2Internet_2.4G_C9A2B9";
 // const char *password = "83902697";
 
-IOTPlatform plat("Lustr");
+IOTPlatform plat("Lustr", true);
 
 bool RELAY_STATE = false;
 bool reset_pressed = false;
 int REALY_PIN = 12;
-int LED_PIN = 13;
+int LED_PIN = 2;
 int BUTTON_PIN = 0;
 
 unsigned long buttonPressedAt = 0;
-int button_state = 1;
+int volatile button_released = 1;
+bool volatile resetDevice = false;
+bool volatile quickButtonPress = false;
 
-void ICACHE_RAM_ATTR interrupt_routine()
+/* Calculate if should run another attempt
+ * check milis() overflow, check: lastAttempt - now > interval */
+bool shouldAttemptDebounce(unsigned long lastAttempt, unsigned long interval)
 {
-    button_state = digitalRead(BUTTON_PIN);
+    auto now = millis();
+    return lastAttempt > now || now - lastAttempt > interval;
+}
 
-    if (button_state == 0 && buttonPressedAt == 0)
-    {
+void IRAM_ATTR interrupt_routine()
+{
+    button_released = digitalRead(BUTTON_PIN);
+
+    if (button_released == LOW && buttonPressedAt == 0)
         buttonPressedAt = millis();
-        Serial.println("Button pressed");
-    }
-    else if (button_state == 1)
+    else if (button_released == HIGH && buttonPressedAt != 0)
     {
-        Serial.println("Button released");
-        if (buttonPressedAt != 0 && millis() - buttonPressedAt - 5 * 1000 > 0)
-            reset_pressed = true;
+        if (shouldAttemptDebounce(buttonPressedAt, 5 * 1000))
+            resetDevice = true;
+        else
+            quickButtonPress = true;
 
         buttonPressedAt = 0;
     }
@@ -36,6 +44,7 @@ void ICACHE_RAM_ATTR interrupt_routine()
 void setup()
 {
     Serial.begin(115200);
+    Serial.println("booting up");
     // plat.reset();
     pinMode(REALY_PIN, OUTPUT);
     pinMode(LED_PIN, OUTPUT);
@@ -58,7 +67,8 @@ void setup()
                                     digitalWrite(REALY_PIN, HIGH);
                                 else
                                     digitalWrite(REALY_PIN, LOW);
-                            });
+                                
+                                return true; });
 
     auto toogleSwitch = nodeSwitch->NewProperty("toggle", "toogle", DataType::ENUM);
     toogleSwitch->setSettable(true);
@@ -76,12 +86,11 @@ void setup()
                                   {
                                       digitalWrite(REALY_PIN, HIGH);
                                       propSwitch->setValue("true");
-                                  }
-                              });
+                                  } 
+                                  return true; });
     // plat.clearTopic();
     // plat.saveTopic("/5d5554843beb3f419f9e4a64/garden/garage/gate");
     plat.enableOTA("123456777", 8266, "esp-lustr");
-    plat.start();
 
     digitalWrite(LED_PIN, HIGH);
     propSwitch->setValue("true");
@@ -89,15 +98,19 @@ void setup()
 
 void loop()
 {
-    if (reset_pressed)
+    // Turn APP_LED led during button press
+    if (button_released)
+        digitalWrite(LED_PIN, HIGH);
+    else
+        digitalWrite(LED_PIN, LOW);
+
+    if (resetDevice)
     {
-        reset_pressed = false;
-        Serial.println("reseting");
+        Serial.println("device reset");
         plat.disconnect();
         plat.reset();
         digitalWrite(LED_PIN, LOW);
         delay(500);
-        digitalWrite(LED_PIN, HIGH);
         ESP.restart();
     }
 
