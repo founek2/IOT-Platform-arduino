@@ -40,12 +40,16 @@ void Ota::enableOTA(const char *password, const uint16_t port, const char *hostn
             Serial.println("Receive Failed");
         else if (error == OTA_END_ERROR)
             Serial.println("End Failed"); });
-    ArduinoOTA.begin();
-
     this->enabled = true;
 }
 
 void Ota::handleOTA()
 {
+    if (!this->running)
+    {
+        ArduinoOTA.begin();
+        this->running = true;
+    }
+
     ArduinoOTA.handle();
 }
