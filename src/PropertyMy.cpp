@@ -79,5 +79,8 @@ void PropertyMy::handleSubscribe(const String &topic, const char *payload)
             this->_publishValue(payload);
     }
     else
+    {
         Serial.printf("callback not defined for propertyId=%s", this->getId());
+        this->_publishValue(payload);
+    }
 }
